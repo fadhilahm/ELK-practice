@@ -5,8 +5,8 @@ services:
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
-      - xpack.security.enabled=true  # Enable security
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}  # Set password for elastic user (change this!)
+      - xpack.security.enabled=${ENABLE_SECURITY:-false}
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:-changeme}  # Set password via env var or use default
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"  # Limit JVM heap size
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
@@ -16,7 +16,7 @@ services:
     networks:
       - elastic
     healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"'"]
+      test: ["CMD-SHELL", "if [ \"${ENABLE_SECURITY:-false}\" = \"true\" ]; then curl -s -u elastic:${ELASTIC_PASSWORD:-changeme} http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"'; else curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"'; fi"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -37,8 +37,8 @@ services:
     container_name: kibana
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-      - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME}
-      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}  # Must match ELASTIC_PASSWORD from elasticsearch
+      - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME:-}
+      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD:-changeme}
     ports:
       - "5601:5601"  # Kibana web interface
     networks:
