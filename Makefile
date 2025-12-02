@@ -1,4 +1,4 @@
-.PHONY: help up build restart validate-env show-env load-env
+.PHONY: help up build restart validate-env show-env load-env reset-password
 
 # Function to strip quotes from a value (handles both single and double quotes)
 # Usage: $(call strip-quotes,"value") or $(call strip-quotes,'value')
@@ -156,3 +156,12 @@ load-env:
 	else \
 		echo "No .env file found."; \
 	fi
+
+# Reset Elasticsearch password for the elastic user
+reset-password:
+	@if ! docker compose ps elasticsearch | grep -q "Up"; then \
+		echo "❌ Error: Elasticsearch container is not running. Start it with 'make build' first."; \
+		exit 1; \
+	fi
+	@echo "Resetting password for elastic user in Elasticsearch container..."
+	@docker compose exec elasticsearch ./bin/elasticsearch-reset-password -u elastic --silent
