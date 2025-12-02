@@ -1,4 +1,4 @@
-.PHONY: help up build restart check-env load-env
+.PHONY: help up build restart validate-env show-env load-env
 
 # Function to strip quotes from a value (handles both single and double quotes)
 # Usage: $(call strip-quotes,"value") or $(call strip-quotes,'value')
@@ -39,7 +39,7 @@ help:
 	{ lastLine = $$0 }' $(MAKEFILE_LIST)
 
 # Build and start services
-build:
+build: validate-env
 	@if [ -f .env ]; then \
 		export $$(awk -F= '!/^#/ && NF==2 { \
 			key=$$1; \
@@ -59,7 +59,7 @@ stop:
 	@docker compose down
 
 # Restart services
-restart:
+restart: validate-env
 	@if [ -f .env ]; then \
 		export $$(awk -F= '!/^#/ && NF==2 { \
 			key=$$1; \
@@ -76,14 +76,68 @@ restart:
 		docker compose up -d; \
 	fi
 
-# Check if required environment variables are set
-check-env:
-	@echo "Checking environment variables..."
-	@if [ "$$ENABLE_SECURITY" = "true" ]; then \
-		if [ -z "$$ELASTIC_PASSWORD" ]; then \
-			echo "Error: ELASTIC_PASSWORD is required when ENABLE_SECURITY=true"; \
-			exit 1; \
+# Validate environment variables
+validate-env:
+	
+	@if [ -f .env ]; then \
+		export $$(awk -F= '!/^#/ && NF==2 { \
+			key=$$1; \
+			value=$$2; \
+			gsub(/^[ \t]+|[ \t]+$$/, "", key); \
+			gsub(/^[ \t]+|[ \t]+$$/, "", value); \
+			gsub(/^["'\'']|["'\'']$$/, "", value); \
+			print key "=" value \
+		}' .env | xargs); \
+		if [ "$$ENABLE_SECURITY" = "true" ]; then \
+			if [ -z "$$ELASTIC_PASSWORD" ]; then \
+				echo "❌ Error: ELASTIC_PASSWORD is required when ENABLE_SECURITY=true"; \
+				exit 1; \
+			fi; \
 		fi; \
+		echo "✅ Validation: Environment variables are set"; \
+	else \
+		echo "⚠️  No .env file found."; \
+		echo "   Environment variables will use defaults from docker-compose.yml"; \
+	fi
+
+# Show environment variables and their values
+show-env:
+	@echo "Environment variables from .env file:"
+	@echo "-----------------------------------"
+	@if [ -f .env ]; then \
+		awk -F= '!/^#/ && NF==2 { \
+			key=$$1; \
+			value=$$2; \
+			gsub(/^[ \t]+|[ \t]+$$/, "", key); \
+			gsub(/^[ \t]+|[ \t]+$$/, "", value); \
+			gsub(/^["'\'']|["'\'']$$/, "", value); \
+			if (key == "ELASTIC_PASSWORD") { \
+				printf "  %-20s = %s\n", key, "***HIDDEN***"; \
+			} else { \
+				printf "  %-20s = %s\n", key, value; \
+			} \
+		}' .env; \
+		echo ""; \
+		export $$(awk -F= '!/^#/ && NF==2 { \
+			key=$$1; \
+			value=$$2; \
+			gsub(/^[ \t]+|[ \t]+$$/, "", key); \
+			gsub(/^[ \t]+|[ \t]+$$/, "", value); \
+			gsub(/^["'\'']|["'\'']$$/, "", value); \
+			print key "=" value \
+		}' .env | xargs); \
+		if [ "$$ENABLE_SECURITY" = "true" ]; then \
+			if [ -z "$$ELASTIC_PASSWORD" ]; then \
+				echo "⚠️  Warning: ELASTIC_PASSWORD is not set (required when ENABLE_SECURITY=true)"; \
+			else \
+				echo "✅ Validation: ELASTIC_PASSWORD is set"; \
+			fi; \
+		else \
+			echo "ℹ️  Security is disabled (ENABLE_SECURITY=false or not set)"; \
+		fi; \
+	else \
+		echo "⚠️  No .env file found."; \
+		echo "   Environment variables will use defaults from docker-compose.yml"; \
 	fi
 
 # Load environment variables from .env file
