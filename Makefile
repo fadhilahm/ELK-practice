@@ -164,4 +164,7 @@ reset-password:
 		exit 1; \
 	fi
 	@echo "Resetting password for elastic user in Elasticsearch container..."
-	@docker compose exec elasticsearch ./bin/elasticsearch-reset-password -u elastic --silent
+	@docker compose exec elasticsearch ./bin/elasticsearch-reset-password -u elastic --silent | tee password-reset.log
+	@cat password-reset.log | pbcopy
+	@echo "Password reset successfully! Output saved to password-reset.log and copied to clipboard"
+	@rm -f password-reset.log
