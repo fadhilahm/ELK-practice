@@ -1,4 +1,4 @@
-.PHONY: help up build restart validate-env show-env load-env reset-password
+.PHONY: help up build restart validate-env show-env load-env reset-password create-enrollment-token
 
 # Function to strip quotes from a value (handles both single and double quotes)
 # Usage: $(call strip-quotes,"value") or $(call strip-quotes,'value')
@@ -168,3 +168,15 @@ reset-password:
 	@cat password-reset.log | pbcopy
 	@echo "Password reset successfully! Output saved to password-reset.log and copied to clipboard"
 	@rm -f password-reset.log
+
+# Create enrollment token for elastic user in Elasticsearch container
+create-enrollment-token:
+	@if ! docker compose ps elasticsearch | grep -q "Up"; then \
+		echo "❌ Error: Elasticsearch container is not running. Start it with 'make build' first."; \
+		exit 1; \
+	fi
+	@echo "Creating enrollment token for elastic user in Elasticsearch container..."
+	@docker compose exec elasticsearch ./bin/elasticsearch-create-enrollment-token -s kibana -u elastic --silent | tee enrollment-token.log
+	@cat enrollment-token.log | pbcopy
+	@echo "Enrollment token created successfully! Output saved to enrollment-token.log and copied to clipboard"
+	@rm -f enrollment-token.log
