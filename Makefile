@@ -1,4 +1,4 @@
-.PHONY: help up build restart check-env
+.PHONY: help up build restart check-env test-logstash
 
 # Load .env file if it exists and export variables
 ifneq (,$(wildcard ./.env))
@@ -64,3 +64,7 @@ check-env:
 	else \
 		echo "Security is disabled (ENABLE_SECURITY is not 'true')"; \
 	fi
+
+# Test Logstash connectivity and functionality
+test-logstash:
+	@./test-logstash.sh
