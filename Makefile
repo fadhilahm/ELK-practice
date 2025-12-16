@@ -1,4 +1,4 @@
-.PHONY: help up build restart check-env test-logstash
+.PHONY: help up build restart check-env test-logstash logstash-interactive
 
 # Load .env file if it exists and export variables
 ifneq (,$(wildcard ./.env))
@@ -68,3 +68,7 @@ check-env:
 # Test Logstash connectivity and functionality
 test-logstash:
 	@./test-logstash.sh
+
+# Run Logstash container in interactive mode (useful for testing stdin input or debugging)
+logstash-interactive:
+	@docker compose run --rm logstash
