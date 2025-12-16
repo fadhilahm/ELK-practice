@@ -1,4 +1,12 @@
-.PHONY: help up build restart check-env test-logstash logstash-interactive
+.PHONY: \
+	help \
+	up \
+	build \
+	restart \
+	check-env \
+	test-logstash \
+	logstash-interactive \
+	logstash-interactive-no-restart
 
 # Load .env file if it exists and export variables
 ifneq (,$(wildcard ./.env))
@@ -82,7 +90,12 @@ test-logstash:
 	@sh -c 'echo "{\"message\": \"Test log from UDP\", \"timestamp\": \"$$(date -Iseconds)\", \"level\": \"INFO\"}" | (nc -u localhost 5000 & PID=$$!; sleep 0.2; kill $$PID 2>/dev/null || true)'
 	@echo "Log sent via UDP"
 	@echo ""
-	@echo "4. Checking Elasticsearch for recent logs..."
+	@echo "4. Testing HTTP input (port 8080)..."
+	@echo "Sending test log via HTTP..."
+	@curl -s --max-time 2 -X POST http://localhost:8080 -H "Content-Type: application/json" -d "{\"message\": \"Test log from HTTP\", \"timestamp\": \"$$(date -Iseconds)\", \"level\": \"INFO\"}" 2>/dev/null || echo "HTTP test completed (timeout or connection issue)"
+	@echo "Log sent via HTTP"
+	@echo ""
+	@echo "5. Checking Elasticsearch for recent logs..."
 	@sleep 2
 	@curl -s "http://localhost:9200/_cat/indices?v" | head -10
 	@echo ""
