@@ -97,3 +97,7 @@ test-logstash:
 # Run Logstash container in interactive mode (useful for testing stdin input or debugging)
 logstash-interactive:
 	@docker compose run --rm logstash
+
+# Run Logstash container in interactive mode without restarting the container
+logstash-interactive-no-restart:
+	@docker compose exec logstash bash
